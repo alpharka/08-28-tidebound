@@ -1,5 +1,13 @@
 # Revisi Navigasi Sticky
 
+## Dokumentasi Kustomisasi
+
+- [x] Petakan file dan data yang perlu diganti.
+- [x] Tulis panduan kustomisasi dalam Markdown.
+- [x] Validasi perintah dan tautan dokumentasi.
+- [x] Simpan checkpoint agar dokumentasi masuk ke repository GitHub.
+
+
 ## Revisi Animasi Klik Navigasi
 
 - [x] Tambahkan feedback klik pada item navigasi bawah.
