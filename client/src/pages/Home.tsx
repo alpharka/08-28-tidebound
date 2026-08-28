@@ -1,5 +1,5 @@
 // Tidebound Editorial reminder: this page is an asymmetric coastal editorial spread, not a generic card template.
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, MouseEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowDownRight, ArrowLeft, ArrowRight, CalendarDays, Check, ChevronDown,
   Clipboard, ExternalLink, Heart, MapPin, Music2, Pause, Play, Send,
@@ -89,6 +89,7 @@ export default function Home() {
   const guest = useMemo(guestName, []);
   const countdown = useCountdown(weddingConfig.event.dateISO);
   const [opened, setOpened] = useState(false);
+  const [activeSection, setActiveSection] = useState("atas");
   const [musicPlaying, setMusicPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -99,6 +100,17 @@ export default function Home() {
 
   useEffect(() => {
     try { setMessages(JSON.parse(localStorage.getItem("sagara-raka-guestbook") || "[]")); } catch { setMessages([]); }
+  }, []);
+  useEffect(() => {
+    const sections = ["atas", "cerita", "acara", "galeri", "rsvp", "kasih"]
+      .map((id) => document.getElementById(id))
+      .filter((section): section is HTMLElement => Boolean(section));
+    const observer = new IntersectionObserver((entries) => {
+      const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+      if (visible) setActiveSection(visible.target.id);
+    }, { rootMargin: "-28% 0px -55% 0px", threshold: [0.1, 0.3, 0.6] });
+    sections.forEach((section) => observer.observe(section));
+    return () => observer.disconnect();
   }, []);
   useEffect(() => {
     document.body.style.overflow = lightboxIndex !== null ? "hidden" : "";
@@ -121,6 +133,13 @@ export default function Home() {
       audioRef.current.volume = 0.25;
       try { await audioRef.current.play(); setMusicPlaying(true); } catch { setMusicPlaying(false); }
     }
+  };
+  const handleNavClick = (event: MouseEvent<HTMLAnchorElement>, href: string) => {
+    event.preventDefault();
+    const target = document.querySelector(href);
+    setActiveSection(href.slice(1));
+    if (target) target.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+    window.history.replaceState(null, "", href);
   };
   const toggleMusic = async () => {
     if (!audioRef.current || !weddingConfig.musicUrl) return;
@@ -188,7 +207,7 @@ export default function Home() {
 
       <footer className="site-footer"><img src={weddingConfig.assets.emblem} alt="" /><p>Sagara <i>&</i> Raka</p><span>With love, always.</span></footer>
       <button className="music-toggle" type="button" onClick={toggleMusic} aria-label={musicPlaying ? "Jeda musik" : "Putar musik"} disabled={!weddingConfig.musicUrl}><span className={musicPlaying ? "music-bars playing" : "music-bars"}><i /><i /><i /></span>{musicPlaying ? <Pause size={15} /> : <Music2 size={15} />}</button>
-      <nav className="mobile-nav" aria-label="Navigasi utama di bagian bawah">{navItems.map((item) => <a key={item.href} href={item.href}>{item.label}</a>)}</nav>
+      <nav className="mobile-nav" aria-label="Navigasi utama di bagian bawah">{navItems.map((item) => <a className={activeSection === item.href.slice(1) ? "nav-item is-active" : "nav-item"} key={item.href} href={item.href} aria-current={activeSection === item.href.slice(1) ? "page" : undefined} onClick={(event) => handleNavClick(event, item.href)}>{item.label}</a>)}</nav>
 
       {lightboxIndex !== null && <div className="lightbox" role="dialog" aria-modal="true" aria-label="Galeri foto" onClick={() => setLightboxIndex(null)}><button className="lightbox-close" type="button" aria-label="Tutup galeri" onClick={() => setLightboxIndex(null)}><X /></button><button className="lightbox-prev" type="button" aria-label="Foto sebelumnya" onClick={(e) => { e.stopPropagation(); setLightboxIndex((lightboxIndex - 1 + weddingConfig.assets.gallery.length) % weddingConfig.assets.gallery.length); }}><ArrowLeft /></button><figure onClick={(e) => e.stopPropagation()}><img src={weddingConfig.assets.gallery[lightboxIndex].src} alt={weddingConfig.assets.gallery[lightboxIndex].alt} /><figcaption>{weddingConfig.assets.gallery[lightboxIndex].caption}</figcaption></figure><button className="lightbox-next" type="button" aria-label="Foto berikutnya" onClick={(e) => { e.stopPropagation(); setLightboxIndex((lightboxIndex + 1) % weddingConfig.assets.gallery.length); }}><ArrowRight /></button></div>}
     </div>
